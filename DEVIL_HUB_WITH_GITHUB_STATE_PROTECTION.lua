@@ -1,17 +1,28 @@
 -- DEVIL HUB - GitHub State Protection
--- The script continues only when the remote State contains the exact activation value.
+-- Reads the remote State Lua file and continues only when it is enabled.
 do
     local STATE_URL = "https://raw.githubusercontent.com/sceiptmanuyuy-dev/DEVIL-MAIN/refs/heads/main/State"
     local REQUIRED_STATE = "DEVIL_HUB_ACTIVE"
 
-    local ok, remoteState = pcall(function()
-        return game:HttpGet(STATE_URL)
+    local stateOK = false
+
+    local httpOK, stateSource = pcall(function()
+        return game:HttpGet(STATE_URL, true)
     end)
 
-    remoteState = ok and tostring(remoteState or "") or ""
-    remoteState = remoteState:gsub("^%s+", ""):gsub("%s+$", "")
+    if httpOK and type(stateSource) == "string" and #stateSource > 0 then
+        local compileOK, stateLoader = pcall(loadstring, stateSource)
 
-    if (not ok) or remoteState ~= REQUIRED_STATE then
+        if compileOK and type(stateLoader) == "function" then
+            local runOK, state = pcall(stateLoader)
+
+            if runOK and type(state) == "table" then
+                stateOK = state.Enabled == true and state.Key == REQUIRED_STATE
+            end
+        end
+    end
+
+    if not stateOK then
         return
     end
 end
